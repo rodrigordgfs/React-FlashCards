@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:3001",
-  timeout: 10 * 1000,
+  baseURL: "https://tarry-plastic-purple.glitch.me",
+  timeout: 60 * 1000,
 });
 
 export async function find(url) {

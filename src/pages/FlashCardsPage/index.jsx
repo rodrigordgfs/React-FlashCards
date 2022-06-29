@@ -127,7 +127,7 @@ export default function FlashCardsPage() {
 
   return (
     <>
-      <Header title="React FlashCards V2" />
+      <Header title="React FlashCards V3" />
       {loading ? (
         <div className="flex items-center justify-center m-4">
           <Loading />
