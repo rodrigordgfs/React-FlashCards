@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Button from "../../components/Button";
-import Error from "../../components/Error";
 import FlashCard from "../../components/FlashCard";
 import FlashCards from "../../components/FlashCards";
 import Header from "../../components/Header";
@@ -15,25 +14,25 @@ import {
   updateFlashcard,
   insertFlashcard,
 } from "../../services/apiService";
+import { successMessage, errorMessage } from "../../utils/toast";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import FlashCardForm from "../../components/FlashCardForm";
 import { getNewId } from "../../services/idService";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function FlashCardsPage() {
   const [flashcards, setFlashcards] = useState([]);
   const [studyFlashcards, setStudyFlashcards] = useState([]);
   const [radioButtonShowTitle, setRadioButtonShowTitle] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [createMode, setCreateMode] = useState(true);
   const [selectedTad, setSelectedTab] = useState(0);
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
 
   const LISTAGEM = 0;
   const CADASTRO = 1;
-  // eslint-disable-next-line
-  const ESTUDO = 2;
 
   useEffect(() => {
     getAllFlashcards()
@@ -41,8 +40,8 @@ export default function FlashCardsPage() {
         setFlashcards(data);
         setLoading(false);
       })
-      .catch((e) => {
-        setError(e);
+      .catch(({ message }) => {
+        errorMessage(message);
         setLoading(false);
       });
   }, []);
@@ -84,15 +83,20 @@ export default function FlashCardsPage() {
     setStudyFlashcards(updatedCards);
   }
 
-  async function handleEditFlashCard(flashcardData) {
-    await updateFlashcard(flashcardData);
+  function handleEditFlashCard(flashcardData) {
     setCreateMode(false);
     setSelectedFlashcard(flashcardData);
     setSelectedTab(CADASTRO);
   }
 
   async function handleDeleteFlashCard(cardId) {
-    await deleteFlashcard(cardId);
+    await deleteFlashcard(cardId)
+      .then(() => {
+        successMessage("Flashcard deletado com sucesso!");
+      })
+      .catch(({ message }) => {
+        errorMessage(message);
+      });
     setFlashcards(flashcards.filter((card) => card.id !== cardId));
   }
 
@@ -107,10 +111,22 @@ export default function FlashCardsPage() {
 
   async function handlePersist(title, description) {
     if (createMode) {
-      await insertFlashcard({ title, description });
+      await insertFlashcard({ title, description })
+        .then(() => {
+          successMessage("Flashcard criado com sucesso!");
+        })
+        .catch(({ message }) => {
+          errorMessage(message);
+        });
       setFlashcards([...flashcards, { id: getNewId(), title, description }]);
     } else {
-      await updateFlashcard({ id: selectedFlashcard.id, title, description });
+      await updateFlashcard({ id: selectedFlashcard.id, title, description })
+        .then(() => {
+          successMessage("Flashcard atualizada com sucesso!");
+        })
+        .catch(({ message }) => {
+          errorMessage(message);
+        });
       setFlashcards(
         flashcards.map((flashcard) => {
           if (flashcard.id === selectedFlashcard.id) {
@@ -134,94 +150,84 @@ export default function FlashCardsPage() {
         </div>
       ) : (
         <Main>
-          {error ? (
-            <div>
-              <Error
-                title="Ops! Algo de errado aconteceu"
-                description={error.message}
+          <Tabs selectedIndex={selectedTad} onSelect={handleTabSelect}>
+            <TabList>
+              <Tab>Listagem</Tab>
+              <Tab>Cadastro</Tab>
+              <Tab>Estudo</Tab>
+            </TabList>
+            <TabPanel>
+              {flashcards.map((flashcard) => {
+                return (
+                  <FlashCardItem
+                    key={flashcard.id}
+                    flashcard={flashcard}
+                    onEdit={handleEditFlashCard}
+                    onDelete={handleDeleteFlashCard}
+                  />
+                );
+              })}
+            </TabPanel>
+            <TabPanel>
+              <div className="my-4">
+                <Button
+                  onButtonClick={handleNewFlashcard}
+                  label="Novo FlashCard"
+                />
+              </div>
+              <FlashCardForm
+                createMode={createMode}
+                onPersist={handlePersist}
+                selectedFlashcard={selectedFlashcard}
               />
-            </div>
-          ) : (
-            <>
-              <Tabs selectedIndex={selectedTad} onSelect={handleTabSelect}>
-                <TabList>
-                  <Tab>Listagem</Tab>
-                  <Tab>Cadastro</Tab>
-                  <Tab>Estudo</Tab>
-                </TabList>
-                <TabPanel>
-                  {flashcards.map((flashcard) => {
+            </TabPanel>
+            <TabPanel>
+              <div className="text-center m-2">
+                <Button
+                  label="Embaralhar Cards"
+                  onButtonClick={handleSuffleCards}
+                />
+              </div>
+              <div className="flex flex-row items-center justify-center space-x-4 m-4">
+                <RadioButton
+                  id="radioButtonShowTitle"
+                  name="showInfo"
+                  buttonChecked={radioButtonShowTitle}
+                  onButtonClick={handleRadioShowTitleClick}
+                >
+                  Monstrar título
+                </RadioButton>
+
+                <RadioButton
+                  id="radioButtonShowDescription"
+                  name="showInfo"
+                  buttonChecked={!radioButtonShowTitle}
+                  onButtonClick={handleRadioShowDescriptionClick}
+                >
+                  Monstrar descrição
+                </RadioButton>
+              </div>
+              <FlashCards>
+                {studyFlashcards.map(
+                  ({ id, title, description, showTitle }) => {
                     return (
-                      <FlashCardItem
-                        key={flashcard.id}
-                        flashcard={flashcard}
-                        onEdit={handleEditFlashCard}
-                        onDelete={handleDeleteFlashCard}
+                      <FlashCard
+                        key={id}
+                        id={id}
+                        title={title}
+                        description={description}
+                        showFlashcardTitle={showTitle}
+                        onToggleFlashcards={handleToggleFlashcards}
                       />
                     );
-                  })}
-                </TabPanel>
-                <TabPanel>
-                  <div className="my-4">
-                    <Button
-                      onButtonClick={handleNewFlashcard}
-                      label="Novo FlashCard"
-                    />
-                  </div>
-                  <FlashCardForm
-                    createMode={createMode}
-                    onPersist={handlePersist}
-                    selectedFlashcard={selectedFlashcard}
-                  />
-                </TabPanel>
-                <TabPanel>
-                  <div className="text-center m-2">
-                    <Button
-                      label="Embaralhar Cards"
-                      onButtonClick={handleSuffleCards}
-                    />
-                  </div>
-                  <div className="flex flex-row items-center justify-center space-x-4 m-4">
-                    <RadioButton
-                      id="radioButtonShowTitle"
-                      name="showInfo"
-                      buttonChecked={radioButtonShowTitle}
-                      onButtonClick={handleRadioShowTitleClick}
-                    >
-                      Monstrar título
-                    </RadioButton>
-
-                    <RadioButton
-                      id="radioButtonShowDescription"
-                      name="showInfo"
-                      buttonChecked={!radioButtonShowTitle}
-                      onButtonClick={handleRadioShowDescriptionClick}
-                    >
-                      Monstrar descrição
-                    </RadioButton>
-                  </div>
-                  <FlashCards>
-                    {studyFlashcards.map(
-                      ({ id, title, description, showTitle }) => {
-                        return (
-                          <FlashCard
-                            key={id}
-                            id={id}
-                            title={title}
-                            description={description}
-                            showFlashcardTitle={showTitle}
-                            onToggleFlashcards={handleToggleFlashcards}
-                          />
-                        );
-                      }
-                    )}
-                  </FlashCards>
-                </TabPanel>
-              </Tabs>
-            </>
-          )}
+                  }
+                )}
+              </FlashCards>
+            </TabPanel>
+          </Tabs>
         </Main>
       )}
+      <ToastContainer />
     </>
   );
 }

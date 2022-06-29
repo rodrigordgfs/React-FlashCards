@@ -2,6 +2,7 @@ import TextInput from "../TextInput";
 import TextArea from "../TextArea";
 import { useEffect, useState } from "react";
 import Button from "../Button";
+import { warningMessage } from "../../utils/toast";
 
 export default function FlashCardForm({
   createMode = true,
@@ -40,7 +41,14 @@ export default function FlashCardForm({
   }
 
   function validateForm() {
-    return title.trim !== "" && description.trim !== "";
+    if (title.trim !== "") {
+      warningMessage("Preencha o campo título");
+      return false;
+    } else if (description.trim !== "") {
+      warningMessage("Preencha o campo descrição");
+      return false;
+    }
+    return true;
   }
 
   function handleFormSubmit(e) {
