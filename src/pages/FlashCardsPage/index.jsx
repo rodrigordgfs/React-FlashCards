@@ -9,9 +9,16 @@ import Main from "../../components/Main";
 import RadioButton from "../../components/RadioButton";
 import FlashCardItem from "../../components/FlashCardItem";
 import { helperSuffleArray } from "../../helpers/arrayHelpers";
-import { getAllFlashcards } from "../../services/apiService";
+import {
+  getAllFlashcards,
+  deleteFlashcard,
+  updateFlashcard,
+  insertFlashcard,
+} from "../../services/apiService";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import FlashCardForm from "../../components/FlashCardForm";
+import { getNewId } from "../../services/idService";
 
 export default function FlashCardsPage() {
   const [flashcards, setFlashcards] = useState([]);
@@ -19,6 +26,14 @@ export default function FlashCardsPage() {
   const [radioButtonShowTitle, setRadioButtonShowTitle] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [createMode, setCreateMode] = useState(true);
+  const [selectedTad, setSelectedTab] = useState(0);
+  const [selectedFlashcard, setSelectedFlashcard] = useState(null);
+
+  const LISTAGEM = 0;
+  const CADASTRO = 1;
+  // eslint-disable-next-line
+  const ESTUDO = 2;
 
   useEffect(() => {
     getAllFlashcards()
@@ -69,9 +84,46 @@ export default function FlashCardsPage() {
     setStudyFlashcards(updatedCards);
   }
 
-  function handleEditFlashCard(cardId) {}
+  async function handleEditFlashCard(flashcardData) {
+    await updateFlashcard(flashcardData);
+    setCreateMode(false);
+    setSelectedFlashcard(flashcardData);
+    setSelectedTab(CADASTRO);
+  }
 
-  function handleDeleteFlashCard(cardId) {}
+  async function handleDeleteFlashCard(cardId) {
+    await deleteFlashcard(cardId);
+    setFlashcards(flashcards.filter((card) => card.id !== cardId));
+  }
+
+  function handleTabSelect(tabIndex) {
+    setSelectedTab(tabIndex);
+  }
+
+  function handleNewFlashcard() {
+    setCreateMode(true);
+    setSelectedFlashcard(null);
+  }
+
+  async function handlePersist(title, description) {
+    if (createMode) {
+      await insertFlashcard({ title, description });
+      setFlashcards([...flashcards, { id: getNewId(), title, description }]);
+    } else {
+      await updateFlashcard({ id: selectedFlashcard.id, title, description });
+      setFlashcards(
+        flashcards.map((flashcard) => {
+          if (flashcard.id === selectedFlashcard.id) {
+            return { ...flashcard, title, description };
+          }
+          return flashcard;
+        })
+      );
+      setSelectedFlashcard(null);
+      setCreateMode(true);
+      setSelectedTab(LISTAGEM);
+    }
+  }
 
   return (
     <>
@@ -91,7 +143,7 @@ export default function FlashCardsPage() {
             </div>
           ) : (
             <>
-              <Tabs>
+              <Tabs selectedIndex={selectedTad} onSelect={handleTabSelect}>
                 <TabList>
                   <Tab>Listagem</Tab>
                   <Tab>Cadastro</Tab>
@@ -101,7 +153,7 @@ export default function FlashCardsPage() {
                   {flashcards.map((flashcard) => {
                     return (
                       <FlashCardItem
-                        key={flashcard.key}
+                        key={flashcard.id}
                         flashcard={flashcard}
                         onEdit={handleEditFlashCard}
                         onDelete={handleDeleteFlashCard}
@@ -110,7 +162,17 @@ export default function FlashCardsPage() {
                   })}
                 </TabPanel>
                 <TabPanel>
-                  <h2>Any content 3</h2>
+                  <div className="my-4">
+                    <Button
+                      onButtonClick={handleNewFlashcard}
+                      label="Novo FlashCard"
+                    />
+                  </div>
+                  <FlashCardForm
+                    createMode={createMode}
+                    onPersist={handlePersist}
+                    selectedFlashcard={selectedFlashcard}
+                  />
                 </TabPanel>
                 <TabPanel>
                   <div className="text-center m-2">

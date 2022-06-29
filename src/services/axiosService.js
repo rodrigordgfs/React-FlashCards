@@ -1,5 +1,22 @@
 import axios from "axios";
 
-export async function get(url) {
-  return await axios.get(url);
+const axiosInstance = axios.create({
+  baseURL: "http://localhost:3001",
+  timeout: 10 * 1000,
+});
+
+export async function find(url) {
+  return await axiosInstance.get(url);
+}
+
+export async function remove(url) {
+  return await axiosInstance.delete(url);
+}
+
+export async function update(url, data) {
+  return await axiosInstance.patch(url, data);
+}
+
+export async function insert(url, data) {
+  return await axiosInstance.post(url, data);
 }

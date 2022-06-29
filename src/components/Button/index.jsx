@@ -1,4 +1,9 @@
-export default function Button({ label = "Text", onButtonClick = null }) {
+export default function Button({
+  label = "Text",
+  onButtonClick = null,
+  color = "bg-gray-200",
+  type = "button",
+}) {
   function handleButtonClick() {
     if (onButtonClick) {
       onButtonClick();
@@ -6,8 +11,9 @@ export default function Button({ label = "Text", onButtonClick = null }) {
   }
   return (
     <button
-      className="bg-gray-200 rounded-md p-2 shadow-md"
+      className={`${color} rounded-md p-2 shadow-md`}
       onClick={handleButtonClick}
+      type={type}
     >
       {label}
     </button>
